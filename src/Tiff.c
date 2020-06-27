@@ -3,7 +3,7 @@
 #include "Tiff.h"
 
 
-int isTiff(Tiff *tiff) {
+int isTiffNum(Tiff *tiff) {
     return getInt(2, 2, tiff->data, tiff->isLittle) == 42;
 }
 
@@ -73,7 +73,7 @@ Tiff *openTiff(char *path) {
         exit(1);
     }
 
-    if (!isTiff(tiff)) {
+    if (!isTiffNum(tiff)) {
         printf("not a tiff!");
         exit(1);
     }
