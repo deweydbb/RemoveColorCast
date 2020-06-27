@@ -210,12 +210,18 @@ int *getPixel(Tiff *tiff, unsigned long pixIndex, unsigned long startOffset) {
 }
 
 void setPixel(Tiff *tiff, int *rgb, unsigned long pixIndex, unsigned long startOffset) {
-    unsigned long startIndex = startOffset + (pixIndex * 3 * (tiff->bitsPerSample / 8));
+    int numBytes = tiff->bitsPerSample / 8;
+    unsigned long startIndex = startOffset + (pixIndex * 3 * numBytes);
 
     for (int i = 0; i < 3; i++) {
         unsigned int index = startIndex + (i * 2);
-        //todo write data in either little endian or big endian
-        
+        unsigned char *bytes = getByteOrderFromInt(rgb[i], numBytes, tiff->isLittle);
+
+        for (int byteIndex = 0; byteIndex < numBytes; byteIndex++) {
+            tiff->data[index + byteIndex] = bytes[byteIndex];
+        }
+
+        free(bytes);
     }
 
     free(rgb);
