@@ -1,9 +1,18 @@
 #include <math.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "Tiff.h"
 
-double power = .5;
+typedef struct {
+    unsigned long startPixel;
+    unsigned long endPixel;
+    unsigned long pixelStartOffset;
+    Tiff *tiff;
+} ThreadInfo;
+
+double power = 5;
 
 double map(double input, double input_start, double input_end, double output_start, double output_end){
     return output_start + ((output_end - output_start) / (input_end - input_start)) * (input - input_start);
@@ -51,16 +60,43 @@ int *normalize(int *c) {
     return c;
 }
 
+void *processPixels(void *info) {
+    ThreadInfo *threadInfo = info;
+
+    for (unsigned long i = threadInfo->startPixel; i < threadInfo->endPixel; i++) {
+        int *pixel = getPixel(threadInfo->tiff, i, threadInfo->pixelStartOffset);
+        setPixel(threadInfo->tiff, normalize(pixel), i, threadInfo->pixelStartOffset);
+    }
+
+    return NULL;
+}
+
 int main() {
+    int numThreads = 8;
     Tiff *tiff = openTiff("../Images/test.tif");
 
     if (isValidTiff(tiff)) {
         unsigned long numPixels = getWidth(tiff) * getHeight(tiff);
         unsigned long pixelStartOffset = getPixelStartOffset(tiff);
 
-        for (unsigned long i = 0; i < numPixels; i++) {
-            int *pixel = getPixel(tiff, i, pixelStartOffset);
-            setPixel(tiff, normalize(pixel), i, pixelStartOffset);
+        ThreadInfo threadInfos[numThreads];
+        pthread_t pIds[numThreads];
+
+        for (int threadNum = 0; threadNum < numThreads; threadNum++) {
+            threadInfos[threadNum].tiff = tiff;
+            threadInfos[threadNum].pixelStartOffset = pixelStartOffset;
+            threadInfos[threadNum].startPixel = threadNum * numPixels / numThreads;
+            threadInfos[threadNum].endPixel = (threadNum + 1) * numPixels / numThreads;
+
+            int error = pthread_create(&(pIds[threadNum]), NULL, &processPixels, &threadInfos[threadNum]);
+            if (error != 0) {
+                printf("\nThread can't be created :[%s]", strerror(error));
+            }
+        }
+
+        // wait for all threads to finish converting their frames
+        for(int i = 0; i < numThreads; i++) {
+            pthread_join(pIds[i], NULL);
         }
 
         writeTiff(tiff, "../Images/output.tif");
