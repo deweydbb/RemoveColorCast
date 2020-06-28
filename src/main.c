@@ -1,19 +1,8 @@
 #include <math.h>
-#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <windows.h>
 #include "Tiff.h"
 #include "File.h"
-
-typedef struct {
-    unsigned long startPixel;
-    unsigned long endPixel;
-    unsigned long pixelStartOffset;
-    double power;
-    Tiff *tiff;
-} ThreadInfo;
 
 double map(double input, double input_start, double input_end, double output_start, double output_end) {
     return output_start + ((output_end - output_start) / (input_end - input_start)) * (input - input_start);
@@ -64,18 +53,6 @@ int *normalize(int *c, double power, int bitsPerSample) {
     return c;
 }
 
-void *processPixels(void *info) {
-    ThreadInfo *threadInfo = info;
-
-    for (unsigned long i = threadInfo->startPixel; i < threadInfo->endPixel; i++) {
-        int *pixel = getPixel(threadInfo->tiff, i, threadInfo->pixelStartOffset);
-        normalize(pixel, threadInfo->power, threadInfo->tiff->bitsPerSample);
-        setPixel(threadInfo->tiff, pixel, i, threadInfo->pixelStartOffset);
-    }
-
-    return NULL;
-}
-
 void handleSingleStrip(Tiff *tiff, double power, char *outputPath) {
 
 }
@@ -87,30 +64,13 @@ void handleMultiStripes(Tiff *tiff, double power, char *outputPath) {
 void handleImage(char *imagePath, char *outputPath, double power) {
     Tiff *tiff = openTiff(imagePath);
 
-    int numThreads = 8;
     unsigned long numPixels = getWidth(tiff) * getHeight(tiff);
     unsigned long pixelStartOffset = getPixelStartOffset(tiff);
 
-    ThreadInfo threadInfos[numThreads];
-    pthread_t pIds[numThreads];
-
-    for (int threadNum = 0; threadNum < numThreads; threadNum++) {
-        threadInfos[threadNum].tiff = tiff;
-        threadInfos[threadNum].power = power;
-        threadInfos[threadNum].pixelStartOffset = pixelStartOffset;
-        threadInfos[threadNum].startPixel = threadNum * numPixels / numThreads;
-        threadInfos[threadNum].endPixel = (threadNum + 1) * numPixels / numThreads;
-
-
-        int error = pthread_create(&(pIds[threadNum]), NULL, &processPixels, &threadInfos[threadNum]);
-        if (error != 0) {
-            printf("\nThread can't be created :[%s]", strerror(error));
-        }
-    }
-
-    // wait for all threads to finish converting their frames
-    for (int i = 0; i < numThreads; i++) {
-        pthread_join(pIds[i], NULL);
+    for (unsigned long i = 0; i < numPixels; i++) {
+        int *pixel = getPixel(tiff, i, pixelStartOffset);
+        normalize(pixel, power, tiff->bitsPerSample);
+        setPixel(tiff, pixel, i, pixelStartOffset);
     }
 
     writeTiff(tiff, outputPath);
