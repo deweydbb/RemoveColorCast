@@ -123,6 +123,7 @@ void handleSingleStrip(Tiff *tiff, double power, char *outputPath) {
 // threads again. These bunches of threads are refereed to as chunks
 void handleMultiStripes(Tiff *tiff, double power, char *outputPath) {
     const int numThreadsPerChunk = 8;
+    int bytesPerChannel = tiff->bitsPerSample / 8;
     unsigned int numThreadChunks = tiff->numStrips / numThreadsPerChunk;
     // if numThreadsPerChunk does not divide evenly into numStrips
     // it is necessary to handle to the remaining few strips
@@ -140,7 +141,7 @@ void handleMultiStripes(Tiff *tiff, double power, char *outputPath) {
             threadInfos[i].power = power;
             threadInfos[i].pixelStartOffset = tiff->stripOffsets[stripIndex];
             threadInfos[i].startPixel = 0;
-            threadInfos[i].endPixel = tiff->bytesPerStrip[stripIndex] / 3;
+            threadInfos[i].endPixel = tiff->bytesPerStrip[stripIndex] / (3 * bytesPerChannel);
             // create thread
             int error = pthread_create(&(pIds[i]), NULL, &processPixels, &threadInfos[i]);
             if (error != 0) {
@@ -165,7 +166,7 @@ void handleMultiStripes(Tiff *tiff, double power, char *outputPath) {
         threadInfos[i].power = power;
         threadInfos[i].pixelStartOffset = tiff->stripOffsets[stripIndex];
         threadInfos[i].startPixel = 0;
-        threadInfos[i].endPixel = tiff->bytesPerStrip[stripIndex] / 3;
+        threadInfos[i].endPixel = tiff->bytesPerStrip[stripIndex] / (3 * bytesPerChannel);
 
         int error = pthread_create(&(pIds[i]), NULL, &processPixels, &threadInfos[i]);
         if (error != 0) {
@@ -234,7 +235,7 @@ int main() {
 
     // print out time information of program
     double timeInSec = (double) (clock() - start) / 1000;
-    printf("\n------------------------------------------------------\n");
+    printf("\n------------------------------------------------------\n\n");
     printf("Time to complete: %.3f %s\n", timeInSec, "seconds");
     printf("Average time per image: %.3f\n", timeInSec / numTifs);
 

@@ -13,7 +13,6 @@ void setEntries(Tiff *tiff) {
     unsigned int pointer = getInt(4, 4, tiff->data, tiff->isLittle);
     // get number of directory entries
     tiff->numEntries = getInt(pointer, 2, tiff->data, tiff->isLittle);
-
     unsigned int startOfEntries = pointer + 2;
     tiff->entries = (DirEntry *) malloc(tiff->numEntries * sizeof(DirEntry));
     // get every directory entry from ifd
@@ -39,6 +38,7 @@ unsigned int getBitsPerSample(Tiff *tiff) {
             for (int j = 0; j < entry.count; j++) {
                 bits[j] = getInt(entry.valueOrOffset + (j * 2), 2, tiff->data, tiff->isLittle);
                 // return negative one if the bits per sample are not the same for all channels
+                unsigned int test = bits[j];
                 if (bits[j] != bits[0]) {
                     return -1;
                 }
@@ -153,13 +153,9 @@ Tiff *openTiff(char *path) {
     fclose(file);
     // determine whether tiff is little or big endian
     tiff->isLittle = isLittleEndian(tiff->data);
-    // print warning for big endian files
-    if (!tiff->isLittle) {
-        printf("WARNING: file is big endian which has not been tested. May not work");
-    }
     // make sure file has tiff magic number
     if (!isTiffNum(tiff)) {
-        printf("not a tiff!");
+        printf("not a tiff!\n");
         free(tiff);
         return NULL;
     }
@@ -229,7 +225,7 @@ int isValidTiff(Tiff *tiff) {
     }
 
     if (tiff->bitsPerSample == -1) {
-        printf("not 3 channels per bit or samples per bit are not the same :(");
+        printf("not 3 channels per bit or samples per bit are not the same :(\n");
         return 0;
     }
 
