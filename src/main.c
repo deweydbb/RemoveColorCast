@@ -19,7 +19,6 @@ double map(double input, double input_start, double input_end, double output_sta
     return output_start + ((output_end - output_start) / (input_end - input_start)) * (input - input_start);
 }
 
-
 // returns the dampened r,g, or b value of a color based on the avg value of
 // the color and a grayness rating from 0 - 1. With 1 being true gray and 0
 // being the opposite of grey
