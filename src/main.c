@@ -39,14 +39,18 @@ int dampenColor(int col, double avg, double grayness, double power) {
     return col + (int) round(change);
 }
 
-
 // takes a color and returns a "normalized color" essentially moving color closer to true gray
 // based on the original color and the value of pow
-int *normalize(int *c, double power) {
+int *normalize(int *c, double power, int bitsPerSample) {
     // sum of the differences between r,g,b. Min of 0 (true gray) max of 510 (255 * 2, full red (255, 0, 0))
     double grayness = abs(c[0] - c[1]) + abs(c[0] - c[2]) + abs(c[2] - c[1]);
     // maps grayness from range of [0, 255] to [0, 1]
-    grayness = map(grayness, 0, 65536 * 2, 0, 1);
+    int max = 65536 * 2;
+    if (bitsPerSample == 8) {
+        max = 255 * 2;
+    }
+
+    grayness = map(grayness, 0, max, 0, 1);
     // reverses range. Now 1 is true gray and 0 is opposite of true gray
     grayness = 1 - grayness;
 
@@ -65,52 +69,58 @@ void *processPixels(void *info) {
 
     for (unsigned long i = threadInfo->startPixel; i < threadInfo->endPixel; i++) {
         int *pixel = getPixel(threadInfo->tiff, i, threadInfo->pixelStartOffset);
-        setPixel(threadInfo->tiff, normalize(pixel, threadInfo->power), i, threadInfo->pixelStartOffset);
+        normalize(pixel, threadInfo->power, threadInfo->tiff->bitsPerSample);
+        setPixel(threadInfo->tiff, pixel, i, threadInfo->pixelStartOffset);
     }
 
     return NULL;
 }
 
+void handleSingleStrip(Tiff *tiff, double power, char *outputPath) {
+
+}
+
+void handleMultiStripes(Tiff *tiff, double power, char *outputPath) {
+
+}
+
 void handleImage(char *imagePath, char *outputPath, double power) {
-    int numThreads = 8;
     Tiff *tiff = openTiff(imagePath);
 
-    if (isValidTiff(tiff)) {
-        unsigned long numPixels = getWidth(tiff) * getHeight(tiff);
-        unsigned long pixelStartOffset = getPixelStartOffset(tiff);
+    int numThreads = 8;
+    unsigned long numPixels = getWidth(tiff) * getHeight(tiff);
+    unsigned long pixelStartOffset = getPixelStartOffset(tiff);
 
-        ThreadInfo threadInfos[numThreads];
-        pthread_t pIds[numThreads];
+    ThreadInfo threadInfos[numThreads];
+    pthread_t pIds[numThreads];
 
-        for (int threadNum = 0; threadNum < numThreads; threadNum++) {
-            threadInfos[threadNum].tiff = tiff;
-            threadInfos[threadNum].power = power;
-            threadInfos[threadNum].pixelStartOffset = pixelStartOffset;
-            threadInfos[threadNum].startPixel = threadNum * numPixels / numThreads;
-            threadInfos[threadNum].endPixel = (threadNum + 1) * numPixels / numThreads;
+    for (int threadNum = 0; threadNum < numThreads; threadNum++) {
+        threadInfos[threadNum].tiff = tiff;
+        threadInfos[threadNum].power = power;
+        threadInfos[threadNum].pixelStartOffset = pixelStartOffset;
+        threadInfos[threadNum].startPixel = threadNum * numPixels / numThreads;
+        threadInfos[threadNum].endPixel = (threadNum + 1) * numPixels / numThreads;
 
 
-            int error = pthread_create(&(pIds[threadNum]), NULL, &processPixels, &threadInfos[threadNum]);
-            if (error != 0) {
-                printf("\nThread can't be created :[%s]", strerror(error));
-            }
+        int error = pthread_create(&(pIds[threadNum]), NULL, &processPixels, &threadInfos[threadNum]);
+        if (error != 0) {
+            printf("\nThread can't be created :[%s]", strerror(error));
         }
-
-        // wait for all threads to finish converting their frames
-        for (int i = 0; i < numThreads; i++) {
-            pthread_join(pIds[i], NULL);
-        }
-
-        writeTiff(tiff, outputPath);
     }
+
+    // wait for all threads to finish converting their frames
+    for (int i = 0; i < numThreads; i++) {
+        pthread_join(pIds[i], NULL);
+    }
+
+    writeTiff(tiff, outputPath);
 
     free(tiff->data);
     free(tiff->entries);
+    free(tiff->stripOffsets);
+    free(tiff->bytesPerStrip);
     free(tiff);
 }
-
-
-
 
 int main() {
     char *inputPath = getDir("Please select the folder of images you want to convert.");

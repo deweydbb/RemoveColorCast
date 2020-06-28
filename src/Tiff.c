@@ -45,6 +45,54 @@ unsigned int getBitsPerSample(Tiff *tiff) {
     return 0;
 }
 
+void setStripValues(Tiff *tiff) {
+    for (int i = 0; i < tiff->numEntries; i++) {
+        DirEntry dirEntry = tiff->entries[i];
+        // strip offsets tag
+        if (dirEntry.tag == 273) {
+            tiff->numStrips = dirEntry.count;
+
+            tiff->stripOffsets = malloc(tiff->numStrips * sizeof(unsigned int));
+
+            if (tiff->numStrips == 1) {
+                tiff->stripOffsets[0] = dirEntry.valueOrOffset;
+            } else {
+                unsigned int ptr = dirEntry.valueOrOffset;
+
+                unsigned int size = 4;
+                if (dirEntry.type == 3) {
+                    size = 2;
+                }
+
+                for (int stripIndex = 0; stripIndex < tiff->numStrips; stripIndex++) {
+                    tiff->stripOffsets[stripIndex] = getInt(ptr, size, tiff->data, tiff->isLittle);
+                    ptr += size;
+                }
+            }
+        }
+        // rows per strip tag
+        if (dirEntry.tag == 279) {
+            tiff->bytesPerStrip = malloc(tiff->numStrips * sizeof(unsigned int));
+
+            if (tiff->numStrips == 1) {
+                tiff->bytesPerStrip[0] = dirEntry.valueOrOffset;
+            } else {
+                unsigned int ptr = dirEntry.valueOrOffset;
+
+                unsigned int size = 4;
+                if (dirEntry.type == 3) {
+                    size = 2;
+                }
+
+                for (int stripIndex = 0; stripIndex < tiff->numStrips; stripIndex++) {
+                    tiff->bytesPerStrip[stripIndex] = getInt(ptr, size, tiff->data, tiff->isLittle);
+                    ptr += size;
+                }
+            }
+        }
+    }
+}
+
 Tiff *openTiff(char *path) {
     Tiff *tiff = malloc(sizeof(Tiff));
 
@@ -69,8 +117,7 @@ Tiff *openTiff(char *path) {
     tiff->isLittle = isLittleEndian(tiff->data);
 
     if (!tiff->isLittle) {
-        printf("Big endian");
-        exit(1);
+        printf("WARNING: file is big endian which has not been tested. May not work");
     }
 
     if (!isTiffNum(tiff)) {
@@ -80,6 +127,7 @@ Tiff *openTiff(char *path) {
 
     setEntries(tiff);
     tiff->bitsPerSample = getBitsPerSample(tiff);
+    //setStripValues(tiff);
 
     return tiff;
 }
@@ -117,18 +165,6 @@ int isRGB(Tiff *tiff) {
     return 0;
 }
 
-int isSingleStrip(Tiff *tiff) {
-    for (int i = 0; i < tiff->numEntries; i++) {
-        DirEntry entry = tiff->entries[i];
-
-        if (entry.tag == 273) {
-            return entry.count == 1;
-        }
-    }
-
-    return 0;
-}
-
 int isValidTiff(Tiff *tiff) {
     if (isCompressed(tiff)) {
         printf("tiff is compressed :( \n");
@@ -142,11 +178,6 @@ int isValidTiff(Tiff *tiff) {
 
     if (!isRGB(tiff)) {
         printf("tiff is not rgb :( \n");
-        return 0;
-    }
-
-    if (!isSingleStrip(tiff)) {
-        printf("tiff is not single strip :( \n");
         return 0;
     }
 
