@@ -6,11 +6,14 @@
 
 typedef struct {
     int isLittle;
-    unsigned int numEntries;
     unsigned int bitsPerSample;
+    unsigned int numEntries;
     DirEntry *entries;
     unsigned long dataLen;
     unsigned char *data;
+    unsigned int numStrips;
+    unsigned int *bytesPerStrip;
+    unsigned int *stripOffsets;
 } Tiff;
 
 Tiff *openTiff(char *path);

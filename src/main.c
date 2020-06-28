@@ -1,19 +1,8 @@
 #include <math.h>
-#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <windows.h>
 #include "Tiff.h"
 #include "File.h"
-
-typedef struct {
-    unsigned long startPixel;
-    unsigned long endPixel;
-    unsigned long pixelStartOffset;
-    double power;
-    Tiff *tiff;
-} ThreadInfo;
 
 double map(double input, double input_start, double input_end, double output_start, double output_end) {
     return output_start + ((output_end - output_start) / (input_end - input_start)) * (input - input_start);
@@ -39,14 +28,18 @@ int dampenColor(int col, double avg, double grayness, double power) {
     return col + (int) round(change);
 }
 
-
 // takes a color and returns a "normalized color" essentially moving color closer to true gray
 // based on the original color and the value of pow
-int *normalize(int *c, double power) {
+int *normalize(int *c, double power, int bitsPerSample) {
     // sum of the differences between r,g,b. Min of 0 (true gray) max of 510 (255 * 2, full red (255, 0, 0))
     double grayness = abs(c[0] - c[1]) + abs(c[0] - c[2]) + abs(c[2] - c[1]);
     // maps grayness from range of [0, 255] to [0, 1]
-    grayness = map(grayness, 0, 65536 * 2, 0, 1);
+    int max = 65536 * 2;
+    if (bitsPerSample == 8) {
+        max = 255 * 2;
+    }
+
+    grayness = map(grayness, 0, max, 0, 1);
     // reverses range. Now 1 is true gray and 0 is opposite of true gray
     grayness = 1 - grayness;
 
@@ -60,57 +53,52 @@ int *normalize(int *c, double power) {
     return c;
 }
 
-void *processPixels(void *info) {
-    ThreadInfo *threadInfo = info;
+void handleSingleStrip(Tiff *tiff, double power, char *outputPath) {
+    unsigned long numPixels = getWidth(tiff) * getHeight(tiff);
+    unsigned long pixelStartOffset = getPixelStartOffset(tiff);
 
-    for (unsigned long i = threadInfo->startPixel; i < threadInfo->endPixel; i++) {
-        int *pixel = getPixel(threadInfo->tiff, i, threadInfo->pixelStartOffset);
-        setPixel(threadInfo->tiff, normalize(pixel, threadInfo->power), i, threadInfo->pixelStartOffset);
+    for (unsigned long i = 0; i < numPixels; i++) {
+        int *pixel = getPixel(tiff, i, pixelStartOffset);
+        normalize(pixel, power, tiff->bitsPerSample);
+        setPixel(tiff, pixel, i, pixelStartOffset);
     }
 
-    return NULL;
+    writeTiff(tiff, outputPath);
+}
+
+void handleMultiStripes(Tiff *tiff, double power, char *outputPath) {
+
+    for (int stripIndex = 0; stripIndex < tiff->numStrips; stripIndex++) {
+        unsigned int numPixelsPerStrip = tiff->bytesPerStrip[stripIndex] / 3;
+        unsigned int stripOffset = tiff->stripOffsets[stripIndex];
+
+        for (unsigned int i = 0; i < numPixelsPerStrip; i++) {
+            int *pixel = getPixel(tiff, i, stripOffset);
+            normalize(pixel, power, tiff->bitsPerSample);
+            setPixel(tiff, pixel, i, stripOffset);
+        }
+    }
+
+    writeTiff(tiff, outputPath);
 }
 
 void handleImage(char *imagePath, char *outputPath, double power) {
-    int numThreads = 8;
     Tiff *tiff = openTiff(imagePath);
 
     if (isValidTiff(tiff)) {
-        unsigned long numPixels = getWidth(tiff) * getHeight(tiff);
-        unsigned long pixelStartOffset = getPixelStartOffset(tiff);
-
-        ThreadInfo threadInfos[numThreads];
-        pthread_t pIds[numThreads];
-
-        for (int threadNum = 0; threadNum < numThreads; threadNum++) {
-            threadInfos[threadNum].tiff = tiff;
-            threadInfos[threadNum].power = power;
-            threadInfos[threadNum].pixelStartOffset = pixelStartOffset;
-            threadInfos[threadNum].startPixel = threadNum * numPixels / numThreads;
-            threadInfos[threadNum].endPixel = (threadNum + 1) * numPixels / numThreads;
-
-
-            int error = pthread_create(&(pIds[threadNum]), NULL, &processPixels, &threadInfos[threadNum]);
-            if (error != 0) {
-                printf("\nThread can't be created :[%s]", strerror(error));
-            }
+        if (tiff->numStrips == 1) {
+            handleSingleStrip(tiff, power, outputPath);
+        } else {
+            handleMultiStripes(tiff, power, outputPath);
         }
-
-        // wait for all threads to finish converting their frames
-        for (int i = 0; i < numThreads; i++) {
-            pthread_join(pIds[i], NULL);
-        }
-
-        writeTiff(tiff, outputPath);
     }
 
     free(tiff->data);
     free(tiff->entries);
+    free(tiff->stripOffsets);
+    free(tiff->bytesPerStrip);
     free(tiff);
 }
-
-
-
 
 int main() {
     char *inputPath = getDir("Please select the folder of images you want to convert.");
