@@ -127,7 +127,7 @@ Tiff *openTiff(char *path) {
 
     setEntries(tiff);
     tiff->bitsPerSample = getBitsPerSample(tiff);
-    //setStripValues(tiff);
+    setStripValues(tiff);
 
     return tiff;
 }

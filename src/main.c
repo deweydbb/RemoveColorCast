@@ -54,16 +54,6 @@ int *normalize(int *c, double power, int bitsPerSample) {
 }
 
 void handleSingleStrip(Tiff *tiff, double power, char *outputPath) {
-
-}
-
-void handleMultiStripes(Tiff *tiff, double power, char *outputPath) {
-
-}
-
-void handleImage(char *imagePath, char *outputPath, double power) {
-    Tiff *tiff = openTiff(imagePath);
-
     unsigned long numPixels = getWidth(tiff) * getHeight(tiff);
     unsigned long pixelStartOffset = getPixelStartOffset(tiff);
 
@@ -74,6 +64,34 @@ void handleImage(char *imagePath, char *outputPath, double power) {
     }
 
     writeTiff(tiff, outputPath);
+}
+
+void handleMultiStripes(Tiff *tiff, double power, char *outputPath) {
+
+    for (int stripIndex = 0; stripIndex < tiff->numStrips; stripIndex++) {
+        unsigned int numPixelsPerStrip = tiff->bytesPerStrip[stripIndex] / 3;
+        unsigned int stripOffset = tiff->stripOffsets[stripIndex];
+
+        for (unsigned int i = 0; i < numPixelsPerStrip; i++) {
+            int *pixel = getPixel(tiff, i, stripOffset);
+            normalize(pixel, power, tiff->bitsPerSample);
+            setPixel(tiff, pixel, i, stripOffset);
+        }
+    }
+
+    writeTiff(tiff, outputPath);
+}
+
+void handleImage(char *imagePath, char *outputPath, double power) {
+    Tiff *tiff = openTiff(imagePath);
+
+    if (isValidTiff(tiff)) {
+        if (tiff->numStrips == 1) {
+            handleSingleStrip(tiff, power, outputPath);
+        } else {
+            handleMultiStripes(tiff, power, outputPath);
+        }
+    }
 
     free(tiff->data);
     free(tiff->entries);

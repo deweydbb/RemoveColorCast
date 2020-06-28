@@ -174,14 +174,14 @@ void setTifPaths(char **tifPaths, const char *inputPath) {
 char *getOutputFilePath(char *inputFile, char *outputDir, double power) {
     char *filename = basename(strdup(inputFile));
 
-    char *res = strdup(outputDir);
+    char res[2048];
+    strcpy(res, outputDir);
 
     strcat(res, "\\");
 
-    char prefix[1024];
-    sprintf(prefix, "%.2f", power);
-    strcat(prefix, "_");
-    strcat(prefix, filename);
+    char prefix[2048];
+    sprintf(prefix, "%.2f_%s", power, filename);
+    strcat(res, prefix);
 
-    return strcat(res, prefix);
+    return strdup(res);
 }
