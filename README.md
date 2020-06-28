@@ -7,10 +7,11 @@ Therefore, this program only supports .tif/.tiff files as they are the most comm
 This program does not meet the requirements for a baseline tiff reader/writer as defined by the TIFF 6.0 specifications
 The type of tifs this program supports is small. This program is also currently implemented to only run on windows. 
 
-To be read by the program, the tif must meet this requirements:
+To be processed by the program, the tif must meet this requirements:
 * Uncompressed (no internal compression)
 * Contain only 1 image
 * 3 channels per pixel (rgb)
+* sRGB color space
 * 8 or 16 bits per-channel
 
 ## What does the program do?
