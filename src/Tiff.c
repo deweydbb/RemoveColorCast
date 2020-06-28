@@ -195,15 +195,16 @@ unsigned long getPixelStartOffset(Tiff *tiff) {
 }
 
 int *getPixel(Tiff *tiff, unsigned long pixIndex, unsigned long startOffset) {
+    int numBytes = tiff->bitsPerSample / 8;
     int *rgb = malloc(3 * sizeof(int));
-    unsigned long startIndex = startOffset + (pixIndex * 3 * (tiff->bitsPerSample / 8));
+    unsigned long startIndex = startOffset + (pixIndex * 3 * (numBytes));
 
     for (int i = 0; i < 3; i++) {
-        unsigned int index = startIndex + (i * 2);
+        unsigned int index = startIndex + (i * numBytes);
         // implicit conversion from unsigned to signed okay here because
         // make value of a 2 byte unsigned int is 65,536 while a 4 bye
         // int has a max value of 2,147,483,647
-        rgb[i] = getInt(index, 2, tiff->data, tiff->isLittle);
+        rgb[i] = getInt(index, numBytes, tiff->data, tiff->isLittle);
     }
 
     return rgb;
@@ -214,7 +215,7 @@ void setPixel(Tiff *tiff, int *rgb, unsigned long pixIndex, unsigned long startO
     unsigned long startIndex = startOffset + (pixIndex * 3 * numBytes);
 
     for (int i = 0; i < 3; i++) {
-        unsigned int index = startIndex + (i * 2);
+        unsigned int index = startIndex + (i * numBytes);
         unsigned char *bytes = getByteOrderFromInt(rgb[i], numBytes, tiff->isLittle);
 
         for (int byteIndex = 0; byteIndex < numBytes; byteIndex++) {

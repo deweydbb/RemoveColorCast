@@ -41,8 +41,8 @@ char *getDir(char *msg) {
 }
 
 double getPower() {
-    char *input = tinyfd_inputBox("", "Please enter a floating point number from 1 to 15."
-                                      " 1 is completely gray,"
+    char *input = tinyfd_inputBox("", "Please enter a floating point number from .1 to 15."
+                                      " .1 is completely gray,"
                                       " 15 is almost no change.", "");
 
     if (input == NULL) {
@@ -53,8 +53,8 @@ double getPower() {
     char *eptr;
     double result = strtod(input, &eptr);
 
-    if (result < 1 || result > 15) {
-        shouldExit("Please enter a floating point number between 1 and 15. Would you like to exit the program?");
+    if (result < .1 || result > 15) {
+        shouldExit("Please enter a floating point number between .1 and 15. Would you like to exit the program?");
         return getPower();
     }
 
