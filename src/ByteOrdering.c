@@ -1,13 +1,16 @@
-#include <stdio.h>
 #include <stdlib.h>
 #include "ByteOrdering.h"
 
 const int BYTE = 8;
 
+// returns true if the first two bytes of a file
+// match the format of a little endian tiff file
 int isLittleEndian(unsigned char *data) {
     return (data[0] == data[1] && data[0] == 'I');
 }
 
+// returns an unsigned integer given its start location in the data, how many bytes long the int
+// assumes that bytes are in little endian ordering
 unsigned int getIntLittle(unsigned int start, unsigned int howManyBytes, unsigned char *data) {
     unsigned int result = 0;
     for (unsigned int i = start + howManyBytes - 1; i >= start; i--) {
@@ -17,6 +20,8 @@ unsigned int getIntLittle(unsigned int start, unsigned int howManyBytes, unsigne
     return result;
 }
 
+// returns an unsigned integer given its start location in the data, how many bytes long the int
+// assumes that bytes are in big endian ordering
 //TODO needs to be tested
 unsigned int getIntBig(unsigned int start, unsigned int howManyBytes, unsigned char *data) {
     unsigned int result = 0;
@@ -28,6 +33,8 @@ unsigned int getIntBig(unsigned int start, unsigned int howManyBytes, unsigned c
     return result;
 }
 
+// returns an unsigned integer given its start location in the data, how many bytes long the int is
+// and the ordering of the bytes. Max number of howManyBytes should be 4.
 unsigned int getInt(unsigned int start, unsigned int howManyBytes, unsigned char *data, int isLittleEndian) {
     if (isLittleEndian) {
         return getIntLittle(start, howManyBytes, data);
@@ -36,6 +43,8 @@ unsigned int getInt(unsigned int start, unsigned int howManyBytes, unsigned char
     return getIntBig(start, howManyBytes, data);
 }
 
+// given an int, returns an array of unsigned chars in the correct order
+// based on little endian byte ordering
 unsigned char *getByteOrderFromIntLittle(int input, int numBytes) {
     unsigned char *res = malloc(numBytes * sizeof(char));
 
@@ -46,7 +55,9 @@ unsigned char *getByteOrderFromIntLittle(int input, int numBytes) {
     return res;
 }
 
-// todo needs to be tested
+// given an int, returns an array of unsigned chars in the correct order
+// based on bid endian byte ordering
+//TODO needs to be tested
 unsigned char *getByteOrderFromIntBig(int input, int numBytes) {
     unsigned char *res = malloc(numBytes * sizeof(char));
 
@@ -57,6 +68,8 @@ unsigned char *getByteOrderFromIntBig(int input, int numBytes) {
     return res;
 }
 
+// given an int, returns an array of unsigned chars in the correct order based on the
+// given byte ordering convention.
 unsigned char *getByteOrderFromInt(int input, int numBytes, int isLittleEndian) {
     if (isLittleEndian) {
         return getByteOrderFromIntLittle(input, numBytes);

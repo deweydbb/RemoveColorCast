@@ -1,8 +1,7 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include "DirEntry.h"
 #include "ByteOrdering.h"
 
+// constructor for DirEntry, fills in all fields
 DirEntry getDirEntry(unsigned char *data, unsigned int pointer, int isLittle) {
     DirEntry res;
 

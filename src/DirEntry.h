@@ -8,8 +8,7 @@ typedef struct {
     unsigned int valueOrOffset;
 } DirEntry;
 
+// constructor for DirEntry, fills in all fields
 DirEntry getDirEntry(unsigned char *data, unsigned int pointer, int isLittle);
-
-
 
 #endif //COLORCAST_DIRENTRY_H
