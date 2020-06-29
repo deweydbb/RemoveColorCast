@@ -306,18 +306,30 @@ int main() {
         } else {
             result = handleTiff(imgPaths[i], outputFile, power);
         }
+
+        free(outputFile);
         // if result of handleImage or handleTiff is -1, then it failed to process
         // the image, add to counter and add file name to list of failed images
         if (result == -1) {
             numFailedFiles++;
-
-            strcat(errorCode, "\nFailed to convert: ");
-            strcat(errorCode, basename(imgPaths[i]));
+            char *fileName = basename(imgPaths[i]);
+            if (2048 - strlen(errorCode) - strlen(fileName) - 20 > 0) {
+                strcat(errorCode, "\nFailed to convert: ");
+                strcat(errorCode, fileName);
+            }
         }
     }
 
     double timeInSec = (double) (clock() - start) / 1000;
     notifyUserAtEnd(timeInSec, numImg, numFailedFiles, errorCode);
+
+    for (int i = 0; i < numImg; i++) {
+        free(imgPaths[i]);
+    }
+
+    free(imgPaths);
+    free(inputPath);
+    free(outputDirPath);
 
     return 0;
 }
