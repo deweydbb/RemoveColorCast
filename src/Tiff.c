@@ -133,18 +133,13 @@ void setStripValues(Tiff *tiff) {
 // opens tiff file and sets all variables in
 // tiff struct
 Tiff *openTiff(char *path, unsigned int fileLen) {
-    Tiff *tiff = malloc(sizeof(Tiff));
-
     FILE *file = fopen(path, "rb");
     if (file == NULL) {
-        printf("could not open file\n");
-        free(tiff);
+        printf("ERROR: could not open file\n");
         return NULL;
     }
 
-    fseek(file, 0, SEEK_END);
-    fileLen = ftell(file);
-    rewind(file);
+    Tiff *tiff = malloc(sizeof(Tiff));
 
     tiff->dataLen = fileLen;
     tiff->data = (unsigned char *) malloc(fileLen * sizeof(char));
@@ -155,7 +150,7 @@ Tiff *openTiff(char *path, unsigned int fileLen) {
     tiff->isLittle = isLittleEndian(tiff->data);
     // make sure file has tiff magic number
     if (!isTiffNum(tiff)) {
-        printf("not a tiff!\n");
+        printf("ERROR: not a tiff!\n");
         free(tiff);
         return NULL;
     }

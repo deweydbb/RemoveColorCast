@@ -101,66 +101,7 @@ int isExtension(char *filePath, char *extension) {
         }
     }
 
-    return 1;
-}
-
-
-// determine if a file ends in a .tif or .TIF extension
-int isTif(char *filePath) {
-    unsigned int len = strlen(filePath);
-    const char *TIF = "tif";
-    const char *TIF_UPPER = "TIF";
-    // loop from back of string
-    for (int i = 0; i < 3; i++) {
-        if (filePath[len - i] != TIF[3 - i] && filePath[len - i] != TIF_UPPER[3 - i]) {
-            return 0;
-        }
-    }
-
-    return 1;
-}
-
-// determine if file ends in a .tiff or .TIFF extension
-int isTiff(char *filePath) {
-    unsigned int len = strlen(filePath);
-    const char *TIF = "tiff";
-    const char *TIF_UPPER = "TIFF";
-
-    for (int i = 0; i < 4; i++) {
-        if (filePath[len - i] != TIF[4 - i] && filePath[len - i] != TIF_UPPER[4 - i]) {
-            return 0;
-        }
-    }
-
-    return 1;
-}
-
-// determine if file ends in a .jpg or .JPG extension
-int isJPG(char *filePath) {
-    unsigned int len = strlen(filePath);
-    const char *JPG = "jpg";
-    const char *JPG_UPPER = "JPG";
-    // loop from back of string
-    for (int i = 0; i < 3; i++) {
-        if (filePath[len - i] != JPG[3 - i] && filePath[len - i] != JPG_UPPER[3 - i]) {
-            return 0;
-        }
-    }
-
-    return 1;
-}
-
-// determine if file ends in a .png or .PNG extension
-int isPNG(char *filePath) {
-    unsigned int len = strlen(filePath);
-    const char *PNG = "png";
-    const char *PNG_UPPER = "PNG";
-    // loop from back of string
-    for (int i = 0; i < 3; i++) {
-        if (filePath[len - i] != PNG[3 - i] && filePath[len - i] != PNG_UPPER[3 - i]) {
-            return 0;
-        }
-    }
+    free(upperExt);
 
     return 1;
 }
@@ -254,7 +195,7 @@ void setImagePaths(char **imgPaths, const char *inputPath) {
 // output file which will be in the output directory but have the
 // input file name with the power as a prefix.
 char *getOutputFilePath(char *inputFile, char *outputDir, double power) {
-    char *filename = basename(strdup(inputFile));
+    char *filename = basename(inputFile);
 
     int numRemove = 4;
     if (isExtension(filename, "tiff")) {
@@ -265,7 +206,7 @@ char *getOutputFilePath(char *inputFile, char *outputDir, double power) {
     strncpy(originalName, filename, strlen(filename) - numRemove);
     originalName[strlen(filename) - numRemove] = '\0';
 
-    char extension[20];
+    char extension[10];
     if (isExtension(filename, "tif") || isExtension(filename, "tiff")) {
         sprintf(extension, "tif");
     } else if (isExtension(filename, "jpg")) {
