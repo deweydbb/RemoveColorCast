@@ -10,13 +10,13 @@
 // given a title and a message, sends a
 // a popup window with given info
 void sendPopup(char *title, char *msg) {
-    tinyfd_messageBox(title, msg,"ok", "info", 0);
+    tinyfd_messageBox(title, msg, "ok", "info", 0);
 }
 
 // displays given message, if user presses yes, program exits
 // if no, function returns
 void shouldExit(char *msg) {
-    int result = tinyfd_messageBox("", msg,"yesno", "question", 0);
+    int result = tinyfd_messageBox("", msg, "yesno", "question", 0);
 
     if (result == 1) {
         exit(0);
@@ -219,14 +219,26 @@ void setImagePaths(char **tifPaths, const char *inputPath) {
 char *getOutputFilePath(char *inputFile, char *outputDir, double power) {
     char *filename = basename(strdup(inputFile));
 
+    int numRemove = 4;
+    if (isTiff(filename)) {
+        numRemove = 5;
+    }
+
+    char originalName[strlen(filename) - numRemove + 1];
+    strncpy(originalName, filename, strlen(filename) - numRemove);
+    originalName[strlen(filename) - numRemove] = '\0';
+
+    char extension[20];
+    if (isTiff(filename) || isTif(filename)) {
+        sprintf(extension, "tif");
+    } else if (isJPG(filename)) {
+        sprintf(extension, "jpg");
+    } else {
+        sprintf(extension, "png");
+    }
+
     char res[2048];
-    strcpy(res, outputDir);
-
-    strcat(res, "\\");
-
-    char prefix[2048];
-    sprintf(prefix, "%.2f_%s", power, filename);
-    strcat(res, prefix);
+    sprintf(res, "%s\\%s.CC-%04.1f.%s", outputDir, originalName, power, extension);
 
     return strdup(res);
 }
