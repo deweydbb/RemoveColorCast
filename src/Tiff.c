@@ -130,10 +130,8 @@ void setStripValues(Tiff *tiff) {
 
 // opens tiff file and sets all variables in
 // tiff struct
-Tiff *openTiff(char *path) {
+Tiff *openTiff(char *path, unsigned int fileLen) {
     Tiff *tiff = malloc(sizeof(Tiff));
-    //TODO calculate file size correctly
-    long filelen;
 
     FILE *file = fopen(path, "rb");
     if (file == NULL) {
@@ -143,13 +141,13 @@ Tiff *openTiff(char *path) {
     }
 
     fseek(file, 0, SEEK_END);
-    filelen = ftell(file);
+    fileLen = ftell(file);
     rewind(file);
 
-    tiff->dataLen = filelen;
-    tiff->data = (unsigned char *) malloc(filelen * sizeof(char));
+    tiff->dataLen = fileLen;
+    tiff->data = (unsigned char *) malloc(fileLen * sizeof(char));
     // read in file data into tiff->data
-    fread(tiff->data, filelen, 1, file);
+    fread(tiff->data, fileLen, 1, file);
     fclose(file);
     // determine whether tiff is little or big endian
     tiff->isLittle = isLittleEndian(tiff->data);
