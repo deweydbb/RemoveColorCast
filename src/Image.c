@@ -27,7 +27,7 @@ Image *getImage(char *path) {
 
 // writes the given image to the given outputPath
 void writeImage(Image *img, char *outputPath) {
-    if (isJPG(outputPath)) {
+    if (isExtension(outputPath, "jpg")) {
         stbi_write_jpg(outputPath, img->width, img->height, 3, img->pix, 100);
     } else {
         stbi_write_png(outputPath, img->width, img->height, 3, img->pix, img->width * 3);
