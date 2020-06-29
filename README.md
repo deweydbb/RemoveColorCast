@@ -1,7 +1,7 @@
 # Remove Color Cast
 Program to remove color casts from interior photos.
 This program is meant as a tool for the photo editing process and is NOT designed to create finished photos.
-Therefore, this program only supports .tif/.tiff files as they are the most common file type when photo editing. 
+This program supports .tif/.tiff files as they are a common file type when photo editing. In addition, the progam also supports .png and .jpg 
 
 ## Limitations
 This program does not meet the requirements for a baseline tiff reader/writer as defined by the TIFF 6.0 specifications
