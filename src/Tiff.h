@@ -18,7 +18,7 @@ typedef struct {
 
 // returns a tiff struct, returns null if cannot
 // open file or file does not have tif magic number
-Tiff *openTiff(char *path);
+Tiff *openTiff(char *path, unsigned int fileLen);
 
 // determines in this program can read tif
 // prints why tif is invalid

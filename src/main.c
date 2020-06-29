@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <sys/stat.h>
 #include "Tiff.h"
 #include "File.h"
 
@@ -115,76 +116,81 @@ void handleSingleStrip(Tiff *tiff, double power, char *outputPath) {
     writeTiff(tiff, outputPath);
 }
 
-// function that handles thread creation for multi striped threads
-// each thread is responsible for one strip. Because there can be
-// thousands of strips it is necessary to not create all of the threads
-// at once. Instead this function creates numThreadsPerChunk threads at a
-// time, waits for them to finish and then creates another numThreadsPerChunk
-// threads again. These bunches of threads are refereed to as chunks
-void handleMultiStripes(Tiff *tiff, double power, char *outputPath) {
-    const int numThreadsPerChunk = 8;
-    unsigned int numThreadChunks = tiff->numStrips / numThreadsPerChunk;
-    // if numThreadsPerChunk does not divide evenly into numStrips
-    // it is necessary to handle to the remaining few strips
-    unsigned int remThreadChunks = tiff->numStrips % numThreadsPerChunk;
+// creates chunk of threads each responsible for 1 strip of the tif.
+// returns once chunk of threads has finished processing pixels
+void handleChunk(Tiff *tiff, double power, unsigned int chunkIndex, unsigned int numThreadsPerChunk) {
+    int bytesPerChannel = tiff->bitsPerSample / 8;
 
-    // loop through all of the chunks
-    for (int chunkIndex = 0; chunkIndex < numThreadChunks; chunkIndex++) {
-        ThreadInfo threadInfos[numThreadsPerChunk];
-        pthread_t pIds[numThreadsPerChunk];
-        // create each thread in the chunk of threads
-        for (int i = 0; i < numThreadsPerChunk; i++) {
-            unsigned int stripIndex = chunkIndex * numThreadsPerChunk + i;
-            // setup ThreadInfo struct
-            threadInfos[i].tiff = tiff;
-            threadInfos[i].power = power;
-            threadInfos[i].pixelStartOffset = tiff->stripOffsets[stripIndex];
-            threadInfos[i].startPixel = 0;
-            threadInfos[i].endPixel = tiff->bytesPerStrip[stripIndex] / 3;
-            // create thread
-            int error = pthread_create(&(pIds[i]), NULL, &processPixels, &threadInfos[i]);
-            if (error != 0) {
-                printf("\nThread can't be created :[%s]", strerror(error));
-            }
-        }
-
-        // wait for all threads to finish before moving on to next chunk
-        for (int i = 0; i < numThreadsPerChunk; i++) {
-            pthread_join(pIds[i], NULL);
-        }
-    }
-
-    // this next part of the function handles the remaining strips
-    // if numStrips is not divisible by numThreadsPerChunk
-    ThreadInfo threadInfos[remThreadChunks];
-    pthread_t pIds[remThreadChunks];
-    // remThreadChunks guaranteed to be less than numThreadsPerChunk
-    for (int i = 0; i < remThreadChunks; i++) {
-        unsigned int stripIndex = numThreadChunks * numThreadsPerChunk + i;
+    ThreadInfo threadInfos[numThreadsPerChunk];
+    pthread_t pIds[numThreadsPerChunk];
+    // create each thread in the chunk of threads
+    for (int i = 0; i < numThreadsPerChunk; i++) {
+        unsigned int stripIndex = chunkIndex * numThreadsPerChunk + i;
+        // setup ThreadInfo struct
         threadInfos[i].tiff = tiff;
         threadInfos[i].power = power;
         threadInfos[i].pixelStartOffset = tiff->stripOffsets[stripIndex];
         threadInfos[i].startPixel = 0;
-        threadInfos[i].endPixel = tiff->bytesPerStrip[stripIndex] / 3;
-
+        threadInfos[i].endPixel = tiff->bytesPerStrip[stripIndex] / (3 * bytesPerChannel);
+        // create thread
         int error = pthread_create(&(pIds[i]), NULL, &processPixels, &threadInfos[i]);
         if (error != 0) {
             printf("\nThread can't be created :[%s]", strerror(error));
         }
     }
 
-    // wait for all threads to finish
+    // wait for all threads to finish before returning
     for (int i = 0; i < numThreadsPerChunk; i++) {
         pthread_join(pIds[i], NULL);
     }
+}
+
+// function that handles thread creation for multi striped threads
+// each thread is responsible for one strip. Because there can be
+// thousands of strips it is necessary to not create all of the threads
+// at once. Instead this function creates numThreadsPerChunk threads at a
+// time, waits for them to finish and then creates another numThreadsPerChunk
+// threads again. These bunches of threads are refereed to as chunks
+void handleMultiStrips(Tiff *tiff, double power, char *outputPath) {
+    const int numThreadsPerChunk = 8;
+    unsigned int numThreadChunks = tiff->numStrips / numThreadsPerChunk;
+    // if numThreadsPerChunk does not divide evenly into numStrips
+    // it is necessary to handle to the remaining few strips
+    unsigned int remThreads = tiff->numStrips % numThreadsPerChunk;
+
+    // loop through all of the chunks
+    for (int chunkIndex = 0; chunkIndex < numThreadChunks; chunkIndex++) {
+        handleChunk(tiff, power, chunkIndex, numThreadsPerChunk);
+    }
+
+    handleChunk(tiff, power, numThreadChunks, remThreads);
+
     // write tiff to output file
     writeTiff(tiff, outputPath);
+}
+
+// returns the length of the given file in bytes
+// -1 if cannot get length
+unsigned int getFileSize(char *filename) {
+    struct stat discriptor;
+
+    if (stat(filename, &discriptor) == 0) {
+        return discriptor.st_size;
+    }
+
+    return -1;
 }
 
 // determines in a tif is valid, if it processes the tif
 // and saves it to the output file path
 void handleImage(char *imagePath, char *outputPath, double power) {
-    Tiff *tiff = openTiff(imagePath);
+    unsigned int fileLen = getFileSize(imagePath);
+    if (fileLen == -1) {
+        printf("could not find file\n");
+        return;
+    }
+
+    Tiff *tiff = openTiff(imagePath, fileLen);
     if (tiff == NULL) {
         return;
     }
@@ -194,7 +200,7 @@ void handleImage(char *imagePath, char *outputPath, double power) {
         if (tiff->numStrips == 1) {
             handleSingleStrip(tiff, power, outputPath);
         } else {
-            handleMultiStripes(tiff, power, outputPath);
+            handleMultiStrips(tiff, power, outputPath);
         }
     }
     // free all data related to the tif
@@ -234,7 +240,7 @@ int main() {
 
     // print out time information of program
     double timeInSec = (double) (clock() - start) / 1000;
-    printf("\n------------------------------------------------------\n");
+    printf("\n------------------------------------------------------\n\n");
     printf("Time to complete: %.3f %s\n", timeInSec, "seconds");
     printf("Average time per image: %.3f\n", timeInSec / numTifs);
 

@@ -22,12 +22,12 @@ unsigned int getIntLittle(unsigned int start, unsigned int howManyBytes, unsigne
 
 // returns an unsigned integer given its start location in the data, how many bytes long the int
 // assumes that bytes are in big endian ordering
-//TODO needs to be tested
 unsigned int getIntBig(unsigned int start, unsigned int howManyBytes, unsigned char *data) {
     unsigned int result = 0;
 
     for (unsigned int i = start; i < start + howManyBytes; i++) {
-        result += (data[i] << ((i - start) * BYTE));
+        unsigned int bitsToShift = (start + howManyBytes - 1 - i) * BYTE;
+        result += data[i] << bitsToShift;
     }
 
     return result;
@@ -57,7 +57,6 @@ unsigned char *getByteOrderFromIntLittle(int input, int numBytes) {
 
 // given an int, returns an array of unsigned chars in the correct order
 // based on bid endian byte ordering
-//TODO needs to be tested
 unsigned char *getByteOrderFromIntBig(int input, int numBytes) {
     unsigned char *res = malloc(numBytes * sizeof(char));
 
