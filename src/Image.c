@@ -14,8 +14,8 @@ Image *getImage(char *path) {
 
     // failed to load image, exit program
     if (pixels == NULL) {
-        printf("Failed to load image: %s\n", path);
-        exit(1);
+        printf("Failed to load image\n");
+        return NULL;
     }
     // create image struct
     Image *img = malloc(sizeof(Image));

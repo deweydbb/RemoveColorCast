@@ -1,3 +1,4 @@
+#include <libgen.h>
 #include <math.h>
 #include <pthread.h>
 #include <stdio.h>
@@ -184,17 +185,19 @@ unsigned int getFileSize(char *filename) {
 
 // determines in a tif is valid, if it processes the tif
 // and saves it to the output file path
-void handleTiff(char *imagePath, char *outputPath, double power) {
+int handleTiff(char *imagePath, char *outputPath, double power) {
     unsigned int fileLen = getFileSize(imagePath);
     if (fileLen == -1) {
         printf("could not find file\n");
-        return;
+        return -1;
     }
 
     Tiff *tiff = openTiff(imagePath, fileLen);
     if (tiff == NULL) {
-        return;
+        return -1;
     }
+
+    int result = 0;
     // isValidTiff will print the reason why the tiff is not valid
     if (isValidTiff(tiff)) {
         // handle tif according how many strips it has
@@ -203,6 +206,8 @@ void handleTiff(char *imagePath, char *outputPath, double power) {
         } else {
             handleMultiStrips(tiff, power, outputPath);
         }
+    } else {
+        result = -1;
     }
     // free all data related to the tif
     free(tiff->data);
@@ -210,10 +215,15 @@ void handleTiff(char *imagePath, char *outputPath, double power) {
     free(tiff->stripOffsets);
     free(tiff->bytesPerStrip);
     free(tiff);
+
+    return result;
 }
 
-void handleImage(char *imagePath, char *outputPath, double power) {
+int handleImage(char *imagePath, char *outputPath, double power) {
     Image *img = getImage(imagePath);
+    if (img == NULL) {
+        return -1;
+    }
 
     for (int row = 0; row < img->height; row++) {
         for (int col = 0; col < img->width; col++) {
@@ -233,6 +243,8 @@ void handleImage(char *imagePath, char *outputPath, double power) {
     }
 
     writeImage(img, outputPath);
+
+    return 0;
 }
 
 int main() {
@@ -252,6 +264,9 @@ int main() {
         exit(0);
     }
 
+    char errorCode[2048] = "";
+    int numFailedFiles = 0;
+
     // allocate array for tif paths and set them
     char **imgPaths = malloc(numImg * sizeof(char *));
     setImagePaths(imgPaths, inputPath);
@@ -259,12 +274,27 @@ int main() {
     for (int i = 0; i < numImg; i++) {
         char *outputFile = getOutputFilePath(imgPaths[i], outputDirPath, power);
         printf("working on file: %s\n", imgPaths[i]);
-
+        int result;
         if (isPNG(imgPaths[i]) || isJPG(imgPaths[i])) {
-            handleImage(imgPaths[i], outputFile, power);
+            result = handleImage(imgPaths[i], outputFile, power);
         } else {
-            handleTiff(imgPaths[i], outputFile, power);
+            result = handleTiff(imgPaths[i], outputFile, power);
         }
+
+        if (result == -1) {
+            numFailedFiles++;
+
+            strcat(errorCode, " \nFailed to convert: ");
+            strcat(errorCode, basename(imgPaths[i]));
+            printf("error code: %s\n", errorCode);
+        }
+    }
+
+    if (numFailedFiles > 0) {
+        char msg[30];
+        sprintf(msg, "Failed to convert %d images", numFailedFiles);
+        sendPopup("WARNING", msg);
+        sendPopup("WARNING", errorCode);
     }
 
     // print out time information of program
