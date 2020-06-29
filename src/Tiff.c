@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include "Tiff.h"
 
+extern const int NUM_CHANNELS;
+
 // returns true if the file has the tif magic number
 int isTiffNum(Tiff *tiff) {
     return getInt(2, 2, tiff->data, tiff->isLittle) == 42;
@@ -30,7 +32,7 @@ unsigned int getBitsPerSample(Tiff *tiff) {
         // tag for bits per sample
         if (entry.tag == 258) {
             // return -1 if there are not 3 channels per pixel
-            if (entry.count != 3) {
+            if (entry.count != NUM_CHANNELS) {
                 return -1;
             }
 
@@ -261,11 +263,11 @@ unsigned int getHeight(Tiff *tiff) {
 int *getPixel(Tiff *tiff, unsigned long pixIndex, unsigned long startOffset) {
     // number of bytes per channel (rgb) either 1 for 8 bit or 2 for 16 bit
     int numBytes = tiff->bitsPerSample / 8;
-    int *rgb = malloc(3 * sizeof(int));
-    // get starting pointer of pixel. 3 represents the 3 channels per pixel (rgb)
-    unsigned long startIndex = startOffset + (pixIndex * 3 * (numBytes));
+    int *rgb = malloc(NUM_CHANNELS * sizeof(int));
+    // get starting pointer of pixel
+    unsigned long startIndex = startOffset + (pixIndex * NUM_CHANNELS * (numBytes));
 
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < NUM_CHANNELS; i++) {
         unsigned int index = startIndex + (i * numBytes);
         // implicit conversion from unsigned to signed okay here because
         // make value of a 2 byte unsigned int is 65,536 while a 4 bye
@@ -282,9 +284,9 @@ void setPixel(Tiff *tiff, int *rgb, unsigned long pixIndex, unsigned long startO
     // number of bytes per channel (rgb) either 1 for 8 bit or 2 for 16 bit
     int numBytes = tiff->bitsPerSample / 8;
     // get starting pointer of pixel. 3 represents the 3 channels per pixel (rgb)
-    unsigned long startIndex = startOffset + (pixIndex * 3 * numBytes);
+    unsigned long startIndex = startOffset + (pixIndex * NUM_CHANNELS * numBytes);
 
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < NUM_CHANNELS; i++) {
         unsigned int index = startIndex + (i * numBytes);
         // get the byte(s) that represent the r,g,b value in the correct order
         // according to whether tiff is little or big endian

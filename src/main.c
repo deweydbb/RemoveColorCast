@@ -10,6 +10,8 @@
 #include "Tiff.h"
 #include "File.h"
 
+const int NUM_CHANNELS = 3;
+
 // struct used for transferring info into threads that process each pixel
 typedef struct {
     unsigned long startPixel;
@@ -61,7 +63,7 @@ int *normalize(int *c, double power, int bitsPerSample) {
     grayness = 1 - grayness;
 
     // calculates the average rgb value of the color
-    double avg = (double) (c[0] + c[1] + c[2]) / 3;
+    double avg = (double) (c[0] + c[1] + c[2]) / NUM_CHANNELS;
     // returns the nomalized color by "dampening" the rgb values individually
     c[0] = dampenColor(c[0], avg, grayness, power);
     c[1] = dampenColor(c[1], avg, grayness, power);
@@ -133,7 +135,7 @@ void handleChunk(Tiff *tiff, double power, unsigned int chunkIndex, unsigned int
         threadInfos[i].power = power;
         threadInfos[i].pixelStartOffset = tiff->stripOffsets[stripIndex];
         threadInfos[i].startPixel = 0;
-        threadInfos[i].endPixel = tiff->bytesPerStrip[stripIndex] / (3 * bytesPerChannel);
+        threadInfos[i].endPixel = tiff->bytesPerStrip[stripIndex] / (NUM_CHANNELS * bytesPerChannel);
         // create thread
         int error = pthread_create(&(pIds[i]), NULL, &processPixels, &threadInfos[i]);
         if (error != 0) {
@@ -183,7 +185,7 @@ unsigned int getFileSize(char *filename) {
     return -1;
 }
 
-// determines in a tif is valid, if it processes the tif
+// determines in a tiff is valid, if it processes the tif
 // and saves it to the output file path
 int handleTiff(char *imagePath, char *outputPath, double power) {
     unsigned int fileLen = getFileSize(imagePath);
@@ -219,24 +221,28 @@ int handleTiff(char *imagePath, char *outputPath, double power) {
     return result;
 }
 
+// handles any image that is not a tiff (jpg, png) normalizes all the
+// pixels and then writes it to the outputPath
 int handleImage(char *imagePath, char *outputPath, double power) {
     Image *img = getImage(imagePath);
     if (img == NULL) {
         return -1;
     }
-
+    // loop through all the pixels in the image
     for (int row = 0; row < img->height; row++) {
         for (int col = 0; col < img->width; col++) {
-            int pixelStartIndex = (row * img->width + col) * 3;
+            // pixels stored in 1d array, calculate start index of pixel
+            int pixelStartIndex = (row * img->width + col) * NUM_CHANNELS;
 
-            int *pixel = malloc(3 * sizeof(unsigned int));
-            for (int i = 0; i < 3; i++) {
+            int *pixel = malloc(NUM_CHANNELS * sizeof(unsigned int));
+            // get rgb values of pixel
+            for (int i = 0; i < NUM_CHANNELS; i++) {
                 pixel[i] = img->pix[pixelStartIndex + i];
             }
 
             normalize(pixel, power, 8);
-
-            for (int i = 0; i < 3; i++) {
+            // write new pixel color back to pixel array
+            for (int i = 0; i < NUM_CHANNELS; i++) {
                 img->pix[pixelStartIndex + i] = pixel[i];
             }
         }
@@ -245,6 +251,26 @@ int handleImage(char *imagePath, char *outputPath, double power) {
     writeImage(img, outputPath);
 
     return 0;
+}
+
+// prints out timing info for program, notifies user if any images failed
+// and lets the user know conversion has completed
+void notifyUserAtEnd(double timeInSec, int numImg, int numFailedFiles, char errorCode[]) {
+    // print out time information of program
+    printf("\n------------------------------------------------------\n\n");
+    printf("Time to complete: %.3f %s\n", timeInSec, "seconds");
+    printf("Average time per image: %.3f\n", timeInSec / numImg);
+
+
+    // notify user of failed images
+    if (numFailedFiles > 0) {
+        char msg[30];
+        sprintf(msg, "Failed to convert %d images", numFailedFiles);
+        sendWarningPopup("WARNING", msg);
+        sendWarningPopup("WARNING", errorCode);
+    }
+
+    sendPopup("", "Conversion has completed!");
 }
 
 int main() {
@@ -260,7 +286,7 @@ int main() {
     int numImg = getNumImgInDir(inputPath);
 
     if (numImg == 0) {
-        sendPopup("Error", "There are no tif files in the input directory you chose. Exiting program.");
+        sendPopup("Error", "There are no supported images in the input directory you chose. Exiting program.");
         exit(0);
     }
 
@@ -280,30 +306,18 @@ int main() {
         } else {
             result = handleTiff(imgPaths[i], outputFile, power);
         }
-
+        // if result of handleImage or handleTiff is -1, then it failed to process
+        // the image, add to counter and add file name to list of failed images
         if (result == -1) {
             numFailedFiles++;
 
-            strcat(errorCode, " \nFailed to convert: ");
+            strcat(errorCode, "\nFailed to convert: ");
             strcat(errorCode, basename(imgPaths[i]));
-            printf("error code: %s\n", errorCode);
         }
     }
 
-    if (numFailedFiles > 0) {
-        char msg[30];
-        sprintf(msg, "Failed to convert %d images", numFailedFiles);
-        sendPopup("WARNING", msg);
-        sendPopup("WARNING", errorCode);
-    }
-
-    // print out time information of program
     double timeInSec = (double) (clock() - start) / 1000;
-    printf("\n------------------------------------------------------\n\n");
-    printf("Time to complete: %.3f %s\n", timeInSec, "seconds");
-    printf("Average time per image: %.3f\n", timeInSec / numImg);
-
-    sendPopup("", "Conversion has completed!");
+    notifyUserAtEnd(timeInSec, numImg, numFailedFiles, errorCode);
 
     return 0;
 }

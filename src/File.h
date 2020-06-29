@@ -5,14 +5,18 @@
 // a popup window with given info
 void sendPopup(char *title, char *msg);
 
+void sendWarningPopup(char *title, char *msg);
+
 // returns the path of a user selected a folder
 char *getDir(char *msg);
 
 // get the power to be used in function dampenColors
 double getPower();
 
+// determine if file ends in a .jpg or .JPG extension
 int isPNG(char *filePath);
 
+// determine if file ends in a .png or .PNG extension
 int isJPG(char *filePath);
 
 // returns the number of tif files in a given directory

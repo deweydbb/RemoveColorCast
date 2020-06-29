@@ -13,6 +13,13 @@ void sendPopup(char *title, char *msg) {
     tinyfd_messageBox(title, msg, "ok", "info", 0);
 }
 
+// given a title and a message, sends a
+// a popup window with given info
+// Icon is a yellow triangle with exclamation mark
+void sendWarningPopup(char *title, char *msg) {
+    tinyfd_messageBox(title, msg, "ok", "warning", 0);
+}
+
 // displays given message, if user presses yes, program exits
 // if no, function returns
 void shouldExit(char *msg) {
@@ -100,6 +107,7 @@ int isTiff(char *filePath) {
     return 1;
 }
 
+// determine if file ends in a .jpg or .JPG extension
 int isJPG(char *filePath) {
     unsigned int len = strlen(filePath);
     const char *JPG = "jpg";
@@ -114,6 +122,7 @@ int isJPG(char *filePath) {
     return 1;
 }
 
+// determine if file ends in a .png or .PNG extension
 int isPNG(char *filePath) {
     unsigned int len = strlen(filePath);
     const char *PNG = "png";

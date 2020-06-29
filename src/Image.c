@@ -11,8 +11,7 @@
 Image *getImage(char *path) {
     int width, height, channels;
     unsigned char *pixels = stbi_load(path, &width, &height, &channels, 3);
-
-    // failed to load image, exit program
+    // failed to load image
     if (pixels == NULL) {
         printf("Failed to load image\n");
         return NULL;
@@ -26,6 +25,7 @@ Image *getImage(char *path) {
     return img;
 }
 
+// writes the given image to the given outputPath
 void writeImage(Image *img, char *outputPath) {
     if (isJPG(outputPath)) {
         stbi_write_jpg(outputPath, img->width, img->height, 3, img->pix, 100);
