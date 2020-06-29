@@ -207,23 +207,23 @@ int isRGB(Tiff *tiff) {
 // is used to determine if the tiff can be read by program
 int isValidTiff(Tiff *tiff) {
     if (isCompressed(tiff)) {
-        printf("tiff is compressed :( \n");
+        printf("ERROR: tiff is compressed\n");
         return 0;
     }
 
     if (isMultiFiled(tiff)) {
-        printf("tiff contains multiple Image File Directories\n"
-               "meaning it probably contains multiple images :( \n");
+        printf("ERROR: tiff contains multiple Image File Directories\n"
+               "meaning it probably contains multiple images\n");
         return 0;
     }
 
     if (!isRGB(tiff)) {
-        printf("tiff is not rgb :( \n");
+        printf("ERROR: tiff is not rgb\n");
         return 0;
     }
 
     if (tiff->bitsPerSample == -1) {
-        printf("not 3 channels per bit or samples per bit are not the same :(\n");
+        printf("ERROR: not 3 channels per bit or samples per bit are not the same\n");
         return 0;
     }
 

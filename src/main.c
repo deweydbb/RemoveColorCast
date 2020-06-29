@@ -5,6 +5,7 @@
 #include <string.h>
 #include <time.h>
 #include <sys/stat.h>
+#include "Image.h"
 #include "Tiff.h"
 #include "File.h"
 
@@ -183,7 +184,7 @@ unsigned int getFileSize(char *filename) {
 
 // determines in a tif is valid, if it processes the tif
 // and saves it to the output file path
-void handleImage(char *imagePath, char *outputPath, double power) {
+void handleTiff(char *imagePath, char *outputPath, double power) {
     unsigned int fileLen = getFileSize(imagePath);
     if (fileLen == -1) {
         printf("could not find file\n");
@@ -211,6 +212,29 @@ void handleImage(char *imagePath, char *outputPath, double power) {
     free(tiff);
 }
 
+void handleImage(char *imagePath, char *outputPath, double power) {
+    Image *img = getImage(imagePath);
+
+    for (int row = 0; row < img->height; row++) {
+        for (int col = 0; col < img->width; col++) {
+            int pixelStartIndex = (row * img->width + col) * 3;
+
+            int *pixel = malloc(3 * sizeof(unsigned int));
+            for (int i = 0; i < 3; i++) {
+                pixel[i] = img->pix[pixelStartIndex + i];
+            }
+
+            normalize(pixel, power, 8);
+
+            for (int i = 0; i < 3; i++) {
+                img->pix[pixelStartIndex + i] = pixel[i];
+            }
+        }
+    }
+
+    writeImage(img, outputPath);
+}
+
 int main() {
     // get the paths for the input and output folders
     char *inputPath = getDir("Please select the folder of images you want to convert.");
@@ -221,28 +245,33 @@ int main() {
     // start the clock
     clock_t start = clock();
     // get the number of tifs in the input directory
-    int numTifs = getNumTifFilesInDir(inputPath);
+    int numImg = getNumImgInDir(inputPath);
 
-    if (numTifs == 0) {
+    if (numImg == 0) {
         sendPopup("Error", "There are no tif files in the input directory you chose. Exiting program.");
         exit(0);
     }
 
     // allocate array for tif paths and set them
-    char **tifPaths = malloc(numTifs * sizeof(char *));
-    setTifPaths(tifPaths, inputPath);
+    char **imgPaths = malloc(numImg * sizeof(char *));
+    setImagePaths(imgPaths, inputPath);
     // loop through each tif file and process it
-    for (int i = 0; i < numTifs; i++) {
-        char *outputFile = getOutputFilePath(tifPaths[i], outputDirPath, power);
-        printf("working on file: %s\n", tifPaths[i]);
-        handleImage(tifPaths[i], outputFile, power);
+    for (int i = 0; i < numImg; i++) {
+        char *outputFile = getOutputFilePath(imgPaths[i], outputDirPath, power);
+        printf("working on file: %s\n", imgPaths[i]);
+
+        if (isPNG(imgPaths[i]) || isJPG(imgPaths[i])) {
+            handleImage(imgPaths[i], outputFile, power);
+        } else {
+            handleTiff(imgPaths[i], outputFile, power);
+        }
     }
 
     // print out time information of program
     double timeInSec = (double) (clock() - start) / 1000;
     printf("\n------------------------------------------------------\n\n");
     printf("Time to complete: %.3f %s\n", timeInSec, "seconds");
-    printf("Average time per image: %.3f\n", timeInSec / numTifs);
+    printf("Average time per image: %.3f\n", timeInSec / numImg);
 
     sendPopup("", "Conversion has completed!");
 
