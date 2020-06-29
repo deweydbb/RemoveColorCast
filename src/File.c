@@ -100,9 +100,37 @@ int isTiff(char *filePath) {
     return 1;
 }
 
+int isJPG(char *filePath) {
+    unsigned int len = strlen(filePath);
+    const char *JPG = "jpg";
+    const char *JPG_UPPER = "JPG";
+    // loop from back of string
+    for (int i = 0; i < 3; i++) {
+        if (filePath[len - i] != JPG[3 - i] && filePath[len - i] != JPG_UPPER[3 - i]) {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+int isPNG(char *filePath) {
+    unsigned int len = strlen(filePath);
+    const char *PNG = "png";
+    const char *PNG_UPPER = "PNG";
+    // loop from back of string
+    for (int i = 0; i < 3; i++) {
+        if (filePath[len - i] != PNG[3 - i] && filePath[len - i] != PNG_UPPER[3 - i]) {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
 // function adapted from: https://stackoverflow.com/questions/2314542/listing-directory-contents-using-c-and-windows
 // returns the number of tif files in a given directory
-int getNumTifFilesInDir(const char *inputPath) {
+int getNumImgInDir(const char *inputPath) {
     WIN32_FIND_DATA fdFile;
     HANDLE hFind = NULL;
 
@@ -131,7 +159,7 @@ int getNumTifFilesInDir(const char *inputPath) {
             if (fdFile.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
             } else {
                 // if path is tif, add to numTifs
-                if (isTif(sPath) || isTiff(sPath)) {
+                if (isTif(sPath) || isTiff(sPath) || isJPG(sPath) || isPNG(sPath)) {
                     numTifs++;
                 }
             }
@@ -145,7 +173,7 @@ int getNumTifFilesInDir(const char *inputPath) {
 
 // function adapted from: https://stackoverflow.com/questions/2314542/listing-directory-contents-using-c-and-windows
 // sets tifPaths to contain the paths to all of the tif files in the input directory
-void setTifPaths(char **tifPaths, const char *inputPath) {
+void setImagePaths(char **tifPaths, const char *inputPath) {
     WIN32_FIND_DATA fdFile;
     HANDLE hFind = NULL;
 
@@ -174,7 +202,7 @@ void setTifPaths(char **tifPaths, const char *inputPath) {
             if (fdFile.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
             } else {
                 // if path is tif, add to numTifs
-                if (isTif(sPath) || isTiff(sPath)) {
+                if (isTif(sPath) || isTiff(sPath) || isJPG(sPath) || isPNG(sPath)) {
                     tifPaths[tifIndex] = strdup(sPath);
                     tifIndex++;
                 }
