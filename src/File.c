@@ -77,6 +77,34 @@ double getPower() {
     return result;
 }
 
+char *toUpperCase(char *lower) {
+    char *res = strdup(lower);
+
+    while (*res) {
+        *res = toupper((unsigned char) *res);
+        res++;
+    }
+
+    return res;
+}
+
+int isExtension(char *filePath, char *extension) {
+    char *upperExt = toUpperCase(extension);
+
+    unsigned int len = strlen(filePath);
+    unsigned int extLen = strlen(extension);
+
+    // loop from back of string
+    for (int i = 0; i < 3; i++) {
+        if (filePath[len - i] != extension[extLen - i] && filePath[len - i] != upperExt[extLen - i]) {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+
 // determine if a file ends in a .tif or .TIF extension
 int isTif(char *filePath) {
     unsigned int len = strlen(filePath);
@@ -153,7 +181,7 @@ int getNumImgInDir(const char *inputPath) {
         return 0;
     }
 
-    int numTifs = 0;
+    int numImgs = 0;
 
     do {
         //Find first file will always return "."
@@ -167,9 +195,9 @@ int getNumImgInDir(const char *inputPath) {
             //Is the entity a File or Folder?
             if (fdFile.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
             } else {
-                // if path is tif, add to numTifs
-                if (isTif(sPath) || isTiff(sPath) || isJPG(sPath) || isPNG(sPath)) {
-                    numTifs++;
+                // if path is tif, jpg, or png add to numImgs
+                if (isExtension(sPath, "tif") || isExtension(sPath, "tiff") || isExtension(sPath, "jpg") || isExtension(sPath, "png")) {
+                    numImgs++;
                 }
             }
         }
@@ -177,12 +205,12 @@ int getNumImgInDir(const char *inputPath) {
 
     FindClose(hFind);
 
-    return numTifs;
+    return numImgs;
 }
 
 // function adapted from: https://stackoverflow.com/questions/2314542/listing-directory-contents-using-c-and-windows
-// sets tifPaths to contain the paths to all of the tif files in the input directory
-void setImagePaths(char **tifPaths, const char *inputPath) {
+// sets imgPaths to contain the paths to all of the tif, jpg, and png files in the input directory
+void setImagePaths(char **imgPaths, const char *inputPath) {
     WIN32_FIND_DATA fdFile;
     HANDLE hFind = NULL;
 
@@ -196,7 +224,7 @@ void setImagePaths(char **tifPaths, const char *inputPath) {
         return;
     }
 
-    int tifIndex = 0;
+    int imgIndex = 0;
 
     do {
         //Find first file will always return "."
@@ -210,10 +238,10 @@ void setImagePaths(char **tifPaths, const char *inputPath) {
             //Is the entity a File or Folder?
             if (fdFile.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
             } else {
-                // if path is tif, add to numTifs
-                if (isTif(sPath) || isTiff(sPath) || isJPG(sPath) || isPNG(sPath)) {
-                    tifPaths[tifIndex] = strdup(sPath);
-                    tifIndex++;
+                // if path is tif, png, or jpg add to
+                if (isExtension(sPath, "tif") || isExtension(sPath, "tiff") || isExtension(sPath, "jpg") || isExtension(sPath, "png")) {
+                    imgPaths[imgIndex] = strdup(sPath);
+                    imgIndex++;
                 }
             }
         }
@@ -229,7 +257,7 @@ char *getOutputFilePath(char *inputFile, char *outputDir, double power) {
     char *filename = basename(strdup(inputFile));
 
     int numRemove = 4;
-    if (isTiff(filename)) {
+    if (isExtension(filename, "tiff")) {
         numRemove = 5;
     }
 
@@ -238,9 +266,9 @@ char *getOutputFilePath(char *inputFile, char *outputDir, double power) {
     originalName[strlen(filename) - numRemove] = '\0';
 
     char extension[20];
-    if (isTiff(filename) || isTif(filename)) {
+    if (isExtension(filename, "tif") || isExtension(filename, "tiff")) {
         sprintf(extension, "tif");
-    } else if (isJPG(filename)) {
+    } else if (isExtension(filename, "jpg")) {
         sprintf(extension, "jpg");
     } else {
         sprintf(extension, "png");

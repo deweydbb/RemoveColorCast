@@ -301,7 +301,7 @@ int main() {
         char *outputFile = getOutputFilePath(imgPaths[i], outputDirPath, power);
         printf("working on file: %s\n", imgPaths[i]);
         int result;
-        if (isPNG(imgPaths[i]) || isJPG(imgPaths[i])) {
+        if (isExtension(imgPaths[i], "jpg") || isExtension(imgPaths[i], "png")) {
             result = handleImage(imgPaths[i], outputFile, power);
         } else {
             result = handleTiff(imgPaths[i], outputFile, power);
