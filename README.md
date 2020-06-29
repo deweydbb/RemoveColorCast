@@ -31,3 +31,6 @@ In this second example, notice how the desk and the wall behind it lose their ye
 
 In this third example, notice how the cabinets on the right lose their blue tint. 
 ![](examples/example1.gif)
+
+### Compiling for Windows
+    gcc -o ColorCast.exe libs/*.c src/*.h src/*.c -pthread -lcomdlg32 -lole32 -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive  
