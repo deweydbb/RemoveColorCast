@@ -14,6 +14,9 @@ To be processed by the program, the tif must meet this requirements:
 * sRGB color space
 * 8 or 16 bits per-channel
 
+## CPU Branch
+This branch of the repository has code that only executes on the cpu. This means that conversion of large tifs (8 and 16 bit) is relatively slow. This branch is meant for people who want use the program but do not have a cuda enabled nvidia graphics card. 
+
 ## What does the program do?
 The program analyzes each pixel. The program moves the color of each pixel closer to true gray (rgb values all the same) depending on how grayness of the original pixel. This means that colors close to gray become true gray, and color that are not gray (red, orange, yellow, etc) remain relatively unchanged. 
 
