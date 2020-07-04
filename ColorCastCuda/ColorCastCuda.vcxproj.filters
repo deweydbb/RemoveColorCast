@@ -1,0 +1,64 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="src">
+      <UniqueIdentifier>{ec5bdff0-13c3-41eb-938d-0e3724f7655a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs">
+      <UniqueIdentifier>{51312f73-a547-4644-af93-d2f6c93e8583}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="Tiff.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="Image.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="File.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="DirEntry.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="ByteOrdering.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="tinyfiledialogs.c">
+      <Filter>libs</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Tiff.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="Image.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="File.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="DirEntry.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="ByteOrdering.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="stb_image.h">
+      <Filter>libs</Filter>
+    </ClInclude>
+    <ClInclude Include="stb_image_write.h">
+      <Filter>libs</Filter>
+    </ClInclude>
+    <ClInclude Include="tinyfiledialogs.h">
+      <Filter>libs</Filter>
+    </ClInclude>
+    <ClInclude Include="Process.cuh" />
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="Process.cu" />
+  </ItemGroup>
+</Project>
