@@ -165,7 +165,6 @@
     <ClInclude Include="DirEntry.h" />
     <ClInclude Include="File.h" />
     <ClInclude Include="Image.h" />
-    <ClInclude Include="Process.cuh" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="stb_image_write.h" />
     <ClInclude Include="Tiff.h" />
@@ -177,14 +176,5 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 11.0.targets" />
-    <Import Project="..\packages\pthreads.redist.2.9.1.4\build\native\pthreads.redist.targets" Condition="Exists('..\packages\pthreads.redist.2.9.1.4\build\native\pthreads.redist.targets')" />
-    <Import Project="..\packages\pthreads.2.9.1.4\build\native\pthreads.targets" Condition="Exists('..\packages\pthreads.2.9.1.4\build\native\pthreads.targets')" />
   </ImportGroup>
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
-    <PropertyGroup>
-      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
-    </PropertyGroup>
-    <Error Condition="!Exists('..\packages\pthreads.redist.2.9.1.4\build\native\pthreads.redist.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\pthreads.redist.2.9.1.4\build\native\pthreads.redist.targets'))" />
-    <Error Condition="!Exists('..\packages\pthreads.2.9.1.4\build\native\pthreads.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\pthreads.2.9.1.4\build\native\pthreads.targets'))" />
-  </Target>
 </Project>

@@ -74,7 +74,7 @@ double getPower() {
     return result;
 }
 
-char* toUpperCase(const char* lower) {
+char *toUpperCase(const char* lower) {
     char* res = _strdup(lower);
 
     while (*res) {
@@ -82,9 +82,10 @@ char* toUpperCase(const char* lower) {
         res++;
     }
 
-    return res;
+    return res -= strlen(lower);
 }
 
+// returns 1 if the filePath ends with the extension string
 int isExtension(char* filePath, const char* extension) {
     char* upperExt = toUpperCase(extension);
 

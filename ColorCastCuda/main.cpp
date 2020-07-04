@@ -12,11 +12,9 @@ extern "C" {
 }
 
 extern "C" const int NUM_CHANNELS = 3;
-
+// functions in Process.cu that process images on the gpu and write out to output file
 extern int handleImage(char* imagePath, char* outputPath, double power);
-
 extern int handleSingleStrip(Tiff* tiff, double power, char* outputPath);
-
 extern int handleMultiStrips(Tiff* tiff, double power, char* outputPath);
 
 // returns the length of the given file in bytes
@@ -33,6 +31,7 @@ unsigned int getFileSize(char* filename) {
 
 // determines in a tiff is valid, if it processes the tif
 // and saves it to the output file path
+// return 0 for success, -1 for failure
 int handleTiff(char* imagePath, char* outputPath, double power) {
 	unsigned int fileLen = getFileSize(imagePath);
 	if (fileLen == -1) {
@@ -65,7 +64,7 @@ int handleTiff(char* imagePath, char* outputPath, double power) {
 	free(tiff->stripOffsets);
 	free(tiff->bytesPerStrip);
 	free(tiff);
-
+	
 	return result;
 }
 

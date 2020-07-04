@@ -56,7 +56,6 @@
     <ClInclude Include="tinyfiledialogs.h">
       <Filter>libs</Filter>
     </ClInclude>
-    <ClInclude Include="Process.cuh" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="Process.cu" />
